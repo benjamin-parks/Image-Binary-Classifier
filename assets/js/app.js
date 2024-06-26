@@ -34,7 +34,12 @@ canvas.addEventListener('mouseup', function(e) {
 canvas.addEventListener('mousemove', draw);
 
 function draw(e) {
-    if (!drawing) return;
+    if (!drawing) {
+        // Log the entire rgbArray for clarity
+        console.clear();
+        console.log(JSON.stringify(rgbArray, null, 2));
+        return;
+    }
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -48,11 +53,9 @@ function draw(e) {
     const rgb = { r, g, b };
     rgbArray.push(rgb);
 
-    // Log the entire rgbArray for clarity
-    console.log(JSON.stringify(rgbArray, null, 2));
 
     // Draw the red line
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#FF0000';
 
