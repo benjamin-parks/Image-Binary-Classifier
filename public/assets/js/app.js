@@ -1,9 +1,9 @@
 document.getElementById('imageLoader').addEventListener('change', handleImage, false);
 document.getElementById('plantButton').addEventListener('click', () => setDrawingMode('plant'));
 document.getElementById('nonPlantButton').addEventListener('click', () => setDrawingMode('non-plant'));
-document.getElementById('saveButton').addEventListener('click', saveAnnotations);  // Renamed to saveAnnotations
-document.getElementById('trainButton').addEventListener('click', trainNeuralNetwork);  // Added event listener for training
-document.getElementById('saveBinaryButton').addEventListener('click', saveBinaryImage);  // New button for saving binary image
+document.getElementById('saveButton').addEventListener('click', saveAnnotations);
+document.getElementById('trainButton').addEventListener('click', trainNeuralNetwork);
+document.getElementById('saveBinaryButton').addEventListener('click', saveBinaryImage);
 
 const canvas = document.getElementById('imageCanvas');
 const ctx = canvas.getContext('2d');
@@ -13,9 +13,13 @@ let drawingMode = 'plant';
 let plantArray = [];
 let nonPlantArray = [];
 let originalImageData;
+let imageFileName = '';
 
 function handleImage(e) {
     const reader = new FileReader();
+    const file = e.target.files[0];
+    imageFileName = file.name; // Store the file name
+
     reader.onload = function(event) {
         img.onload = function() {
             canvas.width = img.width;
@@ -25,7 +29,7 @@ function handleImage(e) {
         }
         img.src = event.target.result;
     }
-    reader.readAsDataURL(e.target.files[0]);
+    reader.readAsDataURL(file);
 }
 
 function setDrawingMode(mode) {
@@ -127,7 +131,8 @@ function saveBinaryImage() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ imageFileName }) // Send the file name to the server
     })
     .then(response => {
         if (response.ok) {
