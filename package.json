@@ -19,6 +19,9 @@
   },
   "homepage": "https://github.com/benjamin-parks/Image-Binary-Classifier#readme",
   "dependencies": {
-    "express": "^4.19.2"
+    "brain.js": "^2.0.0-beta.23",
+    "canvas": "^2.11.2",
+    "express": "^4.19.2",
+    "gpu.js": "^2.16.0"
   }
 }
