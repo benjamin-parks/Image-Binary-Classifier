@@ -1,6 +1,7 @@
 document.getElementById('imageLoader').addEventListener('change', handleImage, false);
 document.getElementById('plantButton').addEventListener('click', () => setDrawingMode('plant'));
 document.getElementById('nonPlantButton').addEventListener('click', () => setDrawingMode('non-plant'));
+document.getElementById('saveButton').addEventListener('click', saveData);
 
 const canvas = document.getElementById('imageCanvas');
 const ctx = canvas.getContext('2d');
@@ -78,4 +79,30 @@ function draw(e) {
     ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(x, y);
+}
+
+function saveData() {
+    const data = {
+        plantArray,
+        nonPlantArray
+    };
+
+    fetch('/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (response.ok) {
+            alert('Data saved successfully!');
+        } else {
+            alert('Error saving data.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving data.');
+    });
 }
