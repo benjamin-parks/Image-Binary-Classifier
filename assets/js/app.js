@@ -1,9 +1,14 @@
 document.getElementById('imageLoader').addEventListener('change', handleImage, false);
+document.getElementById('plantButton').addEventListener('click', () => setDrawingMode('plant'));
+document.getElementById('nonPlantButton').addEventListener('click', () => setDrawingMode('non-plant'));
+
 const canvas = document.getElementById('imageCanvas');
 const ctx = canvas.getContext('2d');
 let img = new Image();
 let drawing = false;
-let rgbArray = [];
+let drawingMode = 'plant';
+let plantArray = [];
+let nonPlantArray = [];
 let originalImageData;
 
 function handleImage(e) {
@@ -21,6 +26,10 @@ function handleImage(e) {
     reader.readAsDataURL(e.target.files[0]);
 }
 
+function setDrawingMode(mode) {
+    drawingMode = mode;
+}
+
 canvas.addEventListener('mousedown', function(e) {
     drawing = true;
     draw(e);  // Start drawing immediately
@@ -35,9 +44,9 @@ canvas.addEventListener('mousemove', draw);
 
 function draw(e) {
     if (!drawing) {
-        // Log the entire rgbArray for clarity
         console.clear();
-        console.log(JSON.stringify(rgbArray, null, 2));
+        console.log('Plant Array:', JSON.stringify(plantArray, null, 2));
+        console.log('Non-Plant Array:', JSON.stringify(nonPlantArray, null, 2));
         return;
     }
 
@@ -51,13 +60,19 @@ function draw(e) {
     const g = originalImageData.data[index + 1];
     const b = originalImageData.data[index + 2];
     const rgb = { r, g, b };
-    rgbArray.push(rgb);
 
+    // Store the RGB values in the appropriate array based on the drawing mode
+    if (drawingMode === 'plant') {
+        plantArray.push(rgb);
+        ctx.strokeStyle = '#FFFFFF';  // White for plant
+    } else {
+        nonPlantArray.push(rgb);
+        ctx.strokeStyle = '#FF0000';  // Red for non-plant
+    }
 
-    // Draw the red line
+    // Draw the line
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#FF0000';
 
     ctx.lineTo(x, y);
     ctx.stroke();
