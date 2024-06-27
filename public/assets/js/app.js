@@ -1,7 +1,9 @@
 document.getElementById('imageLoader').addEventListener('change', handleImage, false);
 document.getElementById('plantButton').addEventListener('click', () => setDrawingMode('plant'));
 document.getElementById('nonPlantButton').addEventListener('click', () => setDrawingMode('non-plant'));
-document.getElementById('saveButton').addEventListener('click', saveData);
+document.getElementById('saveButton').addEventListener('click', saveAnnotations);  // Renamed to saveAnnotations
+document.getElementById('trainButton').addEventListener('click', trainNeuralNetwork);  // Added event listener for training
+document.getElementById('saveBinaryButton').addEventListener('click', saveBinaryImage);  // New button for saving binary image
 
 const canvas = document.getElementById('imageCanvas');
 const ctx = canvas.getContext('2d');
@@ -19,7 +21,6 @@ function handleImage(e) {
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
-            // Store the original image data
             originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         }
         img.src = event.target.result;
@@ -33,12 +34,12 @@ function setDrawingMode(mode) {
 
 canvas.addEventListener('mousedown', function(e) {
     drawing = true;
-    draw(e);  // Start drawing immediately
+    draw(e);
 });
 
 canvas.addEventListener('mouseup', function(e) {
     drawing = false;
-    ctx.beginPath(); // Reset the path to prevent connecting lines
+    ctx.beginPath();
 });
 
 canvas.addEventListener('mousemove', draw);
@@ -54,34 +55,29 @@ function draw(e) {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-
-    // Get the original pixel data from the stored image data
     const index = (Math.floor(y) * canvas.width + Math.floor(x)) * 4;
     const r = originalImageData.data[index];
     const g = originalImageData.data[index + 1];
     const b = originalImageData.data[index + 2];
     const rgb = { r, g, b };
 
-    // Store the RGB values in the appropriate array based on the drawing mode
     if (drawingMode === 'plant') {
         plantArray.push(rgb);
-        ctx.strokeStyle = '#FFFFFF';  // White for plant
+        ctx.strokeStyle = '#FFFFFF';
     } else {
         nonPlantArray.push(rgb);
-        ctx.strokeStyle = '#FF0000';  // Red for non-plant
+        ctx.strokeStyle = '#FF0000';
     }
 
-    // Draw the line
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
-
     ctx.lineTo(x, y);
     ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(x, y);
 }
 
-function saveData() {
+function saveAnnotations() {
     const data = {
         plantArray,
         nonPlantArray
@@ -96,13 +92,52 @@ function saveData() {
     })
     .then(response => {
         if (response.ok) {
-            alert('Data saved successfully!');
+            alert('Annotations saved successfully!');
         } else {
-            alert('Error saving data.');
+            alert('Error saving annotations.');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error saving data.');
+        alert('Error saving annotations.');
+    });
+}
+
+function trainNeuralNetwork() {
+    fetch('/train')
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        } else {
+            throw new Error('Failed to train neural network');
+        }
+    })
+    .then(data => {
+        console.log(data.message);
+        alert('Neural network training complete!');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to train neural network');
+    });
+}
+
+function saveBinaryImage() {
+    fetch('/generate-binary', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            alert('Binary image generated and saved successfully!');
+        } else {
+            alert('Error generating or saving binary image.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error generating or saving binary image.');
     });
 }
