@@ -84,7 +84,9 @@ app.get('/train', (req, res) => {
 
 // Endpoint to generate and save binary image
 app.post('/generate-binary', (req, res) => {
-    const imagePath = path.join(__dirname, 'public/corn_test.jpeg'); // Replace with the path to the original image
+    const { imageFileName } = req.body;
+    const imagePath = path.join(__dirname, 'public', imageFileName);
+
     loadImage(imagePath).then((image) => {
         const canvas = createCanvas(image.width, image.height);
         const ctx = canvas.getContext('2d');
@@ -110,7 +112,7 @@ app.post('/generate-binary', (req, res) => {
         }
 
         ctx.putImageData(binaryImageData, 0, 0);
-        const outputFilePath = path.join(__dirname, 'binary_image.png');
+        const outputFilePath = path.join(__dirname, `${path.parse(imageFileName).name}_binary_image.png`);
         const out = fs.createWriteStream(outputFilePath);
         const stream = canvas.createPNGStream();
         stream.pipe(out);
