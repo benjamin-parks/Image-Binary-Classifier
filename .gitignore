@@ -1,5 +1,6 @@
-data.json
 binary_image.png
+.dockerignore
+Dockerfile
 # Logs
 logs
 *.log
