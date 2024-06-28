@@ -18,7 +18,6 @@ let imageFileName = '';
 function handleImage(e) {
     const reader = new FileReader();
     const file = e.target.files[0];
-    imageFileName = file.name; // Store the file name
 
     reader.onload = function(event) {
         img.onload = function() {
@@ -26,11 +25,45 @@ function handleImage(e) {
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
             originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            // Set imageFileName to the uploaded file name
+            imageFileName = file.name;
+
+            // Convert canvas image to base64 data
+            const imageData = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
+
+            // Send imageData and imageFileName to the server to save
+            fetch('/save-image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ imageData, imageFileName })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Failed to save image');
+                }
+            })
+            .then(data => {
+                // Update image source in UI with public URL
+                const imagePath = data.path; // This should be the public URL returned by the server
+                img.src = imagePath;
+                alert('Image saved and loaded successfully from public folder!');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to save or load image.');
+            });
         }
         img.src = event.target.result;
     }
     reader.readAsDataURL(file);
 }
+
+
 
 function setDrawingMode(mode) {
     drawingMode = mode;

@@ -10,7 +10,8 @@ const trainingData = require('./assets/js/prepareTrainingData');
 const app = express();
 const port = 3001;
 
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static('public'));
 
 // Load JSON data
@@ -43,16 +44,6 @@ const net = new brain.NeuralNetwork({
     activation: 'sigmoid',
     learningRate: 0.1
 });
-
-// Train the neural network
-net.train(trainingData, {
-    log: true,
-    logPeriod: 100,
-    errorThresh: 0.005,
-    iterations: 20000
-});
-
-console.log('Training complete');
 
 // Endpoint to save data
 app.post('/save', (req, res) => {
@@ -135,6 +126,34 @@ app.get('/predict', (req, res) => {
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Endpoint to save uploaded image
+app.post('/save-image', (req, res) => {
+    const imageData = req.body.imageData; // Base64 encoded image data
+    const imageFileName = req.body.imageFileName; // Original filename of the image
+
+    if (!imageData || !imageFileName) {
+        res.status(400).json({ message: 'Missing image data or filename' });
+        return;
+    }
+
+    // Generate a unique filename for the saved image in the public directory
+    const parsedFileName = path.parse(imageFileName);
+    const fileName = `${parsedFileName.name}${parsedFileName.ext}`;
+    const filePath = path.join(__dirname, 'public', fileName);
+
+    // Decode imageData and save to the public directory
+    const base64Data = imageData.replace(/^data:image\/png;base64,/, '');
+    fs.writeFile(filePath, base64Data, 'base64', (err) => {
+        if (err) {
+            console.error('Error saving image:', err);
+            res.status(500).send('Internal Server Error');
+        } else {
+            const publicPath = `/public/${fileName}`; // Adjust as per your public directory structure
+            res.status(200).json({ message: 'Image saved successfully', path: publicPath });
+        }
+    });
 });
 
 app.listen(port, () => {
