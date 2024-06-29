@@ -137,6 +137,8 @@ app.post('/generate-binary', (req, res) => {
                 const b = imageData.data[index + 2];
                 const input = { r: r / 255, g: g / 255, b: b / 255 };
                 const output = net.run(input);
+                
+                // Adjusted logic for binary image generation
                 const binaryValue = output[0] > 0.5 ? 255 : 0;
 
                 binaryImageData.data[index] = binaryValue;
@@ -147,14 +149,25 @@ app.post('/generate-binary', (req, res) => {
         }
 
         ctx.putImageData(binaryImageData, 0, 0);
-        const outputFilePath = path.join(__dirname, `${path.parse(imageFileName).name}_binary_image.png`);
+        const outputFilePath = path.join(__dirname, 'public', 'exports', `${path.parse(imageFileName).name}_binary_image.png`);
         const out = fs.createWriteStream(outputFilePath);
         const stream = canvas.createPNGStream();
+        
+        // Handle stream errors
+        stream.on('error', (err) => {
+            console.error('Error in PNG stream:', err);
+            res.status(500).send('Internal Server Error');
+        });
+
+        // Pipe the PNG stream to the output file
         stream.pipe(out);
+
+        // Handle finish event
         out.on('finish', () => {
-            console.log('Binary image saved');
+            console.log('Binary image saved to exports folder');
             res.status(200).json({ message: 'Binary image generation successful', path: outputFilePath });
         });
+
     }).catch((err) => {
         console.error('Error loading image:', err);
         res.status(500).send('Internal Server Error');
@@ -183,19 +196,25 @@ app.post('/save-image', (req, res) => {
         return;
     }
 
-    // Generate a unique filename for the saved image in the public directory
+    // Create uploads directory if it doesn't exist
+    const uploadsDir = path.join(__dirname, 'public', 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    // Generate a unique filename for the saved image in the uploads directory
     const parsedFileName = path.parse(imageFileName);
     const fileName = `${parsedFileName.name}${parsedFileName.ext}`;
-    const filePath = path.join(__dirname, 'public', fileName);
+    const filePath = path.join(uploadsDir, fileName);
 
-    // Decode imageData and save to the public directory
+    // Decode imageData and save to the uploads directory
     const base64Data = imageData.replace(/^data:image\/png;base64,/, '');
     fs.writeFile(filePath, base64Data, 'base64', (err) => {
         if (err) {
             console.error('Error saving image:', err);
             res.status(500).send('Internal Server Error');
         } else {
-            const publicPath = `/public/${fileName}`; // Adjust as per your public directory structure
+            const publicPath = `/uploads/${fileName}`; // Path relative to 'public'
             res.status(200).json({ message: 'Image saved successfully', path: publicPath });
         }
     });

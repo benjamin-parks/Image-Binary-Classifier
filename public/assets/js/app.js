@@ -39,13 +39,16 @@ async function handleImage(e) {
         img.src = fileContent;
         
         img.onload = async function() {
+            // Remove the onload event listener once it's triggered
+            img.onload = null;
+            
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
             originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             
             // Set imageFileName to the uploaded file name
-            imageFileName = file.name;
+            const imageFileName = file.name;
             
             // Convert canvas image to base64 data
             const imageData = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
@@ -67,7 +70,9 @@ async function handleImage(e) {
                 // Update image source in UI with public URL
                 const imagePath = data.path; // This should be the public URL returned by the server
                 img.src = imagePath;
-                alert('Image saved and loaded successfully from public folder!');
+
+                // Show alert only once after image is successfully saved and loaded
+                window.alert('Image Loaded!');
             } catch (error) {
                 console.error('Error:', error);
                 alert('Failed to save or load image.');
@@ -78,6 +83,7 @@ async function handleImage(e) {
         alert('Failed to read the file.');
     }
 }
+
 
 async function handleBatchInference() {
     const files = document.getElementById('batchImageLoader').files;
@@ -106,7 +112,7 @@ async function handleBatchInference() {
         alert('Batch inference complete!');
     } catch (error) {
         console.error('Error:', error);
-        alert('Failed to perform batch inference');
+        alert('Failed to perform batch inference. Have you trained the model?');
     }
 }
 
