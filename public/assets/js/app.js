@@ -115,6 +115,16 @@ document.addEventListener('keyup', function(event) {
         setDrawingMode('plant');
     } else if (event.key === '2') {
         setDrawingMode('non-plant');
+    } else if (event.key === 's' || event.key === 'S') {
+        saveAnnotations();
+    } else if (event.key === 't' || event.key === "T") {
+        trainNeuralNetwork();
+    } else if (event.key === 'g' || event.key === 'G') {
+        saveBinaryImage();
+    } else if (event.key === 'i' || event.key === "I") {
+        handleBatchInference();
+    } else if (event.key === 'n') {
+        clearData();
     }
 });
 
