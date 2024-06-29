@@ -22,7 +22,8 @@
         <button class="btn btn-primary col-1 me-2" id="clearButton">Clear Annotations</button>
         <button class="btn btn-warning col-1 me-2" id="saveButton">Save Annotations</button>
         <button class="btn btn-primary col-1 me-2" id="trainButton">Train</button>
-        <button class="btn btn-warning col-1" id="saveBinaryButton">Generate Binary</button>
+        <button class="btn btn-warning col-1 me-2" id="saveBinaryButton">Generate Binary</button>
+        <button class="btn btn-primary col-1 me-2" id="batchInferenceButton">Batch Inference</button>
     </div>
     <br />
     <div class="d-flex justify-content-center">
@@ -37,6 +38,11 @@
                 <li>1 = Want</li>
                 <li>2 = Don't Want</li>
             </ul>
+        </div>
+        <div class="col-3">
+            <input class="form-control" type="file" id="batchImageLoader" name="batchImageLoader" webkitdirectory directory multiple />
+            <br/>
+            <p>Select a folder of images for batch inference.</p>
         </div>
     </div>
 
