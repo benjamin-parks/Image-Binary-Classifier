@@ -5,35 +5,44 @@ const fs = require('fs');
 const brain = require('brain.js');
 const { createCanvas, loadImage } = require('canvas');
 const { loadData } = require('./assets/js/dataHandler');
-const trainingData = require('./assets/js/prepareTrainingData');
 
 const app = express();
 const port = 3001;
 
-app.use(bodyParser.json({ limit: '10mb' }));
-app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+app.use(bodyParser.json({ limit: '40mb' }));
+app.use(bodyParser.urlencoded({ limit: '40mb', extended: true }));
 app.use(express.static('public'));
 
 // Load JSON data
-const data = loadData('./data.json');
+let data;
+try {
+    data = loadData('./data.json');
+} catch (err) {
+    console.error('Error loading data:', err);
+    data = { plantArray: [], nonPlantArray: [] }; // Default empty data
+}
 
 // Function to prepare training data
 function prepareTrainingData(data) {
     const trainingData = [];
 
-    data.plantArray.forEach(rgb => {
-        trainingData.push({
-            input: { r: rgb.r / 255, g: rgb.g / 255, b: rgb.b / 255 },
-            output: [1] // Plant label
+    if (data.plantArray && Array.isArray(data.plantArray)) {
+        data.plantArray.forEach(rgb => {
+            trainingData.push({
+                input: { r: rgb.r / 255, g: rgb.g / 255, b: rgb.b / 255 },
+                output: [1] // Plant label
+            });
         });
-    });
+    }
 
-    data.nonPlantArray.forEach(rgb => {
-        trainingData.push({
-            input: { r: rgb.r / 255, g: rgb.g / 255, b: rgb.b / 255 },
-            output: [0] // Non-plant label
+    if (data.nonPlantArray && Array.isArray(data.nonPlantArray)) {
+        data.nonPlantArray.forEach(rgb => {
+            trainingData.push({
+                input: { r: rgb.r / 255, g: rgb.g / 255, b: rgb.b / 255 },
+                output: [0] // Non-plant label
+            });
         });
-    });
+    }
 
     return trainingData;
 }
@@ -45,11 +54,29 @@ const net = new brain.NeuralNetwork({
     learningRate: 0.1
 });
 
+app.post('/clear', (req, res) => {
+    const data = {
+        plantArray: [],
+        nonPlantArray: []
+    };
+    const filePath = path.join(__dirname, 'data.json');
+
+    fs.writeFile(filePath, JSON.stringify(data, null, 2), (err) => {
+        if (err) {
+            console.error('Error clearing the file', err);
+            res.status(500).send('Internal Server Error');
+        } else {
+            res.status(200).send('Annotations cleared successfully');
+        }
+    });
+});
+
+
 // Endpoint to save data
 app.post('/save', (req, res) => {
     const data = req.body;
     const filePath = path.join(__dirname, 'data.json');
-    
+
     fs.writeFile(filePath, JSON.stringify(data, null, 2), (err) => {
         if (err) {
             console.error('Error writing to file', err);
@@ -60,8 +87,16 @@ app.post('/save', (req, res) => {
     });
 });
 
+
 // Endpoint to train the neural network
 app.get('/train', (req, res) => {
+    const trainingData = prepareTrainingData(data); // Ensure data is correctly fetched and formatted
+
+    if (!Array.isArray(trainingData) || trainingData.length === 0) {
+        res.status(400).json({ message: 'No training data available' });
+        return;
+    }
+
     net.train(trainingData, {
         log: true,
         logPeriod: 100,
@@ -116,6 +151,7 @@ app.post('/generate-binary', (req, res) => {
         res.status(500).send('Internal Server Error');
     });
 });
+
 
 // Example usage of the trained neural network
 app.get('/predict', (req, res) => {

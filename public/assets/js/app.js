@@ -1,6 +1,8 @@
 document.getElementById('imageLoader').addEventListener('change', handleImage, false);
 document.getElementById('plantButton').addEventListener('click', () => setDrawingMode('plant'));
 document.getElementById('nonPlantButton').addEventListener('click', () => setDrawingMode('non-plant'));
+
+document.getElementById('clearButton').addEventListener('click', clearData);
 document.getElementById('saveButton').addEventListener('click', saveAnnotations);
 document.getElementById('trainButton').addEventListener('click', trainNeuralNetwork);
 document.getElementById('saveBinaryButton').addEventListener('click', saveBinaryImage);
@@ -15,12 +17,24 @@ let nonPlantArray = [];
 let originalImageData;
 let imageFileName = '';
 
-function handleImage(e) {
-    const reader = new FileReader();
+async function handleImage(e) {
     const file = e.target.files[0];
 
-    reader.onload = function(event) {
-        img.onload = function() {
+    // Create a promise to handle FileReader
+    const readFile = file => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    };
+
+    try {
+        const fileContent = await readFile(file);
+        img.src = fileContent;
+
+        img.onload = async function() {
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
@@ -32,42 +46,47 @@ function handleImage(e) {
             // Convert canvas image to base64 data
             const imageData = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
 
-            // Send imageData and imageFileName to the server to save
-            fetch('/save-image', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ imageData, imageFileName })
-            })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else {
+            try {
+                const response = await fetch('/save-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ imageData, imageFileName })
+                });
+
+                if (!response.ok) {
                     throw new Error('Failed to save image');
                 }
-            })
-            .then(data => {
+
+                const data = await response.json();
                 // Update image source in UI with public URL
                 const imagePath = data.path; // This should be the public URL returned by the server
                 img.src = imagePath;
                 alert('Image saved and loaded successfully from public folder!');
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Error:', error);
                 alert('Failed to save or load image.');
-            });
-        }
-        img.src = event.target.result;
+            }
+        };
+    } catch (error) {
+        console.error('Error reading file:', error);
+        alert('Failed to read the file.');
     }
-    reader.readAsDataURL(file);
 }
 
-
+document.addEventListener('keyup', function(event) {
+    if (event.key === '1') {
+        setDrawingMode('plant');
+    } else if (event.key === '2') {
+        setDrawingMode('non-plant');
+    }
+});
 
 function setDrawingMode(mode) {
     drawingMode = mode;
 }
+
 
 canvas.addEventListener('mousedown', function(e) {
     drawing = true;
@@ -177,5 +196,35 @@ function saveBinaryImage() {
     .catch(error => {
         console.error('Error:', error);
         alert('Error generating or saving binary image.');
+    });
+}
+
+
+function clearData() {
+    plantArray = [];
+    nonPlantArray = [];
+
+    const data = {
+        plantArray,
+        nonPlantArray
+    };
+
+    fetch('/clear', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (response.ok) {
+            alert('Annotation data cleared!');
+        } else {
+            alert('Error clearing annotations.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error clearing annotations.');
     });
 }
