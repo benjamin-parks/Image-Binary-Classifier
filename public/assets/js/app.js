@@ -6,6 +6,7 @@ document.getElementById('clearButton').addEventListener('click', clearData);
 document.getElementById('saveButton').addEventListener('click', saveAnnotations);
 document.getElementById('trainButton').addEventListener('click', trainNeuralNetwork);
 document.getElementById('saveBinaryButton').addEventListener('click', saveBinaryImage);
+document.getElementById('batchInferenceButton').addEventListener('click', handleBatchInference);
 
 const canvas = document.getElementById('imageCanvas');
 const ctx = canvas.getContext('2d');
@@ -17,9 +18,12 @@ let nonPlantArray = [];
 let originalImageData;
 let imageFileName = '';
 
+
+
+
 async function handleImage(e) {
     const file = e.target.files[0];
-
+    
     // Create a promise to handle FileReader
     const readFile = file => {
         return new Promise((resolve, reject) => {
@@ -29,23 +33,23 @@ async function handleImage(e) {
             reader.readAsDataURL(file);
         });
     };
-
+    
     try {
         const fileContent = await readFile(file);
         img.src = fileContent;
-
+        
         img.onload = async function() {
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
             originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
+            
             // Set imageFileName to the uploaded file name
             imageFileName = file.name;
-
+            
             // Convert canvas image to base64 data
             const imageData = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
-
+            
             try {
                 const response = await fetch('/save-image', {
                     method: 'POST',
@@ -54,11 +58,11 @@ async function handleImage(e) {
                     },
                     body: JSON.stringify({ imageData, imageFileName })
                 });
-
+                
                 if (!response.ok) {
                     throw new Error('Failed to save image');
                 }
-
+                
                 const data = await response.json();
                 // Update image source in UI with public URL
                 const imagePath = data.path; // This should be the public URL returned by the server
@@ -72,6 +76,37 @@ async function handleImage(e) {
     } catch (error) {
         console.error('Error reading file:', error);
         alert('Failed to read the file.');
+    }
+}
+
+async function handleBatchInference() {
+    const files = document.getElementById('batchImageLoader').files;
+    if (files.length === 0) {
+        alert('Please select a folder of images.');
+        return;
+    }
+
+    const formData = new FormData();
+    for (const file of files) {
+        formData.append('images', file);
+    }
+
+    try {
+        const response = await fetch('/batch-inference', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error('Batch inference failed');
+        }
+
+        const data = await response.json();
+        console.log(data.message);
+        alert('Batch inference complete!');
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to perform batch inference');
     }
 }
 

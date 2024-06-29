@@ -6,6 +6,11 @@ const brain = require('brain.js');
 const { createCanvas, loadImage } = require('canvas');
 const { loadData } = require('./assets/js/dataHandler');
 
+const multer = require('multer');
+const upload = multer({ dest: path.join(__dirname, 'public/uploads') });
+const outputDir = path.join(__dirname, 'public/exports');
+const fsPromises = fs.promises;
+
 const app = express();
 const port = 3001;
 
@@ -20,6 +25,10 @@ try {
 } catch (err) {
     console.error('Error loading data:', err);
     data = { plantArray: [], nonPlantArray: [] }; // Default empty data
+}
+
+if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true }); // recursive true to create parent directories if not exist
 }
 
 // Function to prepare training data
@@ -190,6 +199,77 @@ app.post('/save-image', (req, res) => {
             res.status(200).json({ message: 'Image saved successfully', path: publicPath });
         }
     });
+});
+
+
+
+app.post('/batch-inference', upload.array('images'), async (req, res) => {
+    try {
+        const files = req.files;
+
+        if (!files || files.length === 0) {
+            return res.status(400).send('No files uploaded.');
+        }
+
+        const results = [];
+        for (const file of files) {
+            const imagePath = path.join(__dirname, 'public/uploads', file.filename);
+            const imageName = path.basename(file.originalname, path.extname(file.originalname));
+            const outputDir = path.join(__dirname, 'public/exports');
+            const outputFilePath = path.join(outputDir, `${imageName}_binary_image.png`);
+
+            // Ensure the output directory exists
+            if (!fs.existsSync(outputDir)) {
+                fs.mkdirSync(outputDir, { recursive: true }); // Create the directory if it doesn't exist
+            }
+
+            // Load the image and process for binary generation
+            await loadImage(imagePath).then((image) => {
+                const canvas = createCanvas(image.width, image.height);
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(image, 0, 0);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const binaryImageData = ctx.createImageData(canvas.width, canvas.height);
+
+                for (let y = 0; y < canvas.height; y++) {
+                    for (let x = 0; x < canvas.width; x++) {
+                        const index = (y * canvas.width + x) * 4;
+                        const r = imageData.data[index];
+                        const g = imageData.data[index + 1];
+                        const b = imageData.data[index + 2];
+                        const input = { r: r / 255, g: g / 255, b: b / 255 };
+                        const output = net.run(input);
+
+                        // Adjusted logic for binary image generation
+                        const binaryValue = output[0] > 0.5 ? 255 : 0;
+
+                        binaryImageData.data[index] = binaryValue;
+                        binaryImageData.data[index + 1] = binaryValue;
+                        binaryImageData.data[index + 2] = binaryValue;
+                        binaryImageData.data[index + 3] = 255; // Fully opaque
+                    }
+                }
+
+                ctx.putImageData(binaryImageData, 0, 0);
+                const out = fs.createWriteStream(outputFilePath);
+                const stream = canvas.createPNGStream();
+                stream.pipe(out);
+                results.push(outputFilePath);
+
+                // Cleanup the uploaded file
+                fs.unlink(imagePath, (err) => {
+                    if (err) {
+                        console.error('Failed to delete uploaded file', err);
+                    }
+                });
+            });
+        }
+
+        res.status(200).json({ message: 'Batch inference completed successfully', paths: results });
+    } catch (err) {
+        console.error('Error during batch inference:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 app.listen(port, () => {
