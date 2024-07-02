@@ -48,8 +48,8 @@ async function handleImage(e) {
             originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             
             // Set imageFileName to the uploaded file name
-            const imageFileName = file.name;
-            
+            imageFileName = file.name; // Update global variable
+
             // Convert canvas image to base64 data
             const imageData = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
             
@@ -85,6 +85,7 @@ async function handleImage(e) {
 }
 
 
+
 async function handleBatchInference() {
     const files = document.getElementById('batchImageLoader').files;
     if (files.length === 0) {
@@ -115,6 +116,7 @@ async function handleBatchInference() {
         alert('Failed to perform batch inference. Have you trained the model?');
     }
 }
+
 
 document.addEventListener('keyup', function(event) {
     if (event.key === '1') {
@@ -210,8 +212,8 @@ function saveAnnotations() {
     });
 }
 
-function trainNeuralNetwork() {
-    fetch('/train')
+async function trainNeuralNetwork() {
+    await fetch('/train')
     .then(response => {
         if (response.ok) {
             return response.json();
@@ -229,8 +231,8 @@ function trainNeuralNetwork() {
     });
 }
 
-function saveBinaryImage() {
-    fetch('/generate-binary', {
+async function saveBinaryImage() {
+    await fetch('/generate-binary', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

@@ -118,11 +118,11 @@ app.get('/train', (req, res) => {
 });
 
 // Endpoint to generate and save binary image
-app.post('/generate-binary', (req, res) => {
-    const { imageFileName } = req.body;
-    const imagePath = path.join(__dirname, 'public', imageFileName);
+app.post('/generate-binary', async (req, res) => {
+    const { imageFileName } = await req.body;
+    const imagePath = path.join(__dirname, 'public', 'uploads', imageFileName);
 
-    loadImage(imagePath).then((image) => {
+    await loadImage(imagePath).then((image) => {
         const canvas = createCanvas(image.width, image.height);
         const ctx = canvas.getContext('2d');
         ctx.drawImage(image, 0, 0);
