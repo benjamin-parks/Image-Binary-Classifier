@@ -139,7 +139,7 @@ app.post('/generate-binary', async (req, res) => {
                 const output = net.run(input);
                 
                 // Adjusted logic for binary image generation
-                const binaryValue = output[0] > 0.5 ? 255 : 0;
+                const binaryValue = output[0] > 0.1 ? 255 : 0;
 
                 binaryImageData.data[index] = binaryValue;
                 binaryImageData.data[index + 1] = binaryValue;
@@ -260,7 +260,7 @@ app.post('/batch-inference', upload.array('images'), async (req, res) => {
                         const output = net.run(input);
 
                         // Adjusted logic for binary image generation
-                        const binaryValue = output[0] > 0.5 ? 255 : 0;
+                        const binaryValue = output[0] > 0.1 ? 255 : 0;
 
                         binaryImageData.data[index] = binaryValue;
                         binaryImageData.data[index + 1] = binaryValue;
