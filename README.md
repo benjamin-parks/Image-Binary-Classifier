@@ -28,3 +28,7 @@ If successful, retry the dependency install step you used in the section above. 
 8. At this point you can load another image OR train your neural network if you're happy with what you've got by clicking the "Train" button.
 9. If you want to inference just the image you annotated, you can click the "Generate Binary" button.
 10. If you want to batch inference with the trained network, you can click the "choose files" button to upload a folder of JPG, JPEG, or PNG photos. After that you click the "Batch Inference" button and you are good to go!
+
+* Contributing
+* Ben: benjamin-parks
+* Brian: coopbri
